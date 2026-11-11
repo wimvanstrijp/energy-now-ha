@@ -1,0 +1,94 @@
+# =====================================================================================
+#  Energy Now (lite) — "is power cheap right now?" dashboard for Home Assistant
+#  Version 0.1 (2026-11-11). Core Home Assistant only, no HACS needed. Currency: £
+#
+#  STEP 1: fill in your own sensors under "variables" below (see GUIDE.md). Only edit that block.
+#  STEP 2: put this file in /config/packages/ and restart Home Assistant.
+# =====================================================================================
+template:
+  - triggers:
+      - trigger: time_pattern
+        seconds: "/10"
+      - trigger: homeassistant
+        event: start
+    variables:
+      # ---- EDIT THIS ------------------------------------------------------------
+      source_net: sensor.your_net_power             # net grid power (W or kW): + = importing, − = exporting
+      source_solar: none                                # solar power (W or kW), or: none
+      source_price: sensor.your_price_now             # electricity price now, all-in (£/kWh)
+      source_price_avg: none                    # average price today (£/kWh), or: none
+      # ---------------------------------------------------------------------------
+      net_kw: >-
+        {% set v = states(source_net) | float(none) %}
+        {% if v is none %}none{% else %}
+        {{ (v / 1000) if state_attr(source_net, 'unit_of_measurement') == 'W' else v }}{% endif %}
+      solar_kw: >-
+        {% if source_solar in [none, 'none', ''] %}0{% else %}
+        {% set v = states(source_solar) | float(0) %}
+        {{ (v / 1000) if state_attr(source_solar, 'unit_of_measurement') == 'W' else v }}{% endif %}
+      price: "{{ states(source_price) | float(none) }}"
+      price_avg: >-
+        {{ none if source_price_avg in [none, 'none', ''] else states(source_price_avg) | float(none) }}
+    sensor:
+      - name: "Energy Now net power"
+        unique_id: energy_now_net_power
+        unit_of_measurement: kW
+        device_class: power
+        state_class: measurement
+        icon: mdi:transmission-tower
+        availability: "{{ net_kw not in [none, 'none'] }}"
+        state: "{{ net_kw | float(0) | round(3) }}"
+      - name: "Energy Now import"
+        unique_id: energy_now_import
+        unit_of_measurement: kW
+        device_class: power
+        state_class: measurement
+        icon: mdi:transmission-tower-import
+        availability: "{{ net_kw not in [none, 'none'] }}"
+        state: "{{ [net_kw | float(0), 0] | max | round(3) }}"
+      - name: "Energy Now export"
+        unique_id: energy_now_export
+        unit_of_measurement: kW
+        device_class: power
+        state_class: measurement
+        icon: mdi:transmission-tower-export
+        availability: "{{ net_kw not in [none, 'none'] }}"
+        state: "{{ [0 - net_kw | float(0), 0] | max | round(3) }}"
+      - name: "Energy Now home usage"
+        unique_id: energy_now_home_usage
+        unit_of_measurement: kW
+        device_class: power
+        state_class: measurement
+        icon: mdi:home-lightning-bolt-outline
+        availability: "{{ net_kw not in [none, 'none'] }}"
+        state: "{{ [net_kw | float(0) + solar_kw | float(0), 0] | max | round(3) }}"
+      - name: "Energy Now solar"
+        unique_id: energy_now_solar
+        unit_of_measurement: kW
+        device_class: power
+        state_class: measurement
+        icon: mdi:solar-power-variant
+        state: "{{ solar_kw | float(0) | round(3) }}"
+      - name: "Energy Now price"
+        unique_id: energy_now_price
+        unit_of_measurement: "£/kWh"
+        icon: mdi:currency-eur
+        availability: "{{ price not in [none, 'none'] }}"
+        state: "{{ price | float(0) | round(3) }}"
+      - name: "Energy Now cost per hour"
+        unique_id: energy_now_cost_per_hour
+        unit_of_measurement: "£/h"
+        icon: mdi:cash-clock
+        availability: "{{ net_kw not in [none, 'none'] and price not in [none, 'none'] }}"
+        # With a dynamic tariff and no net metering, this is what you really pay (+) or earn (−) per hour.
+        state: "{{ (net_kw | float(0) * price | float(0)) | round(2) }}"
+      - name: "Energy Now advice"
+        unique_id: energy_now_advice
+        icon: mdi:lightbulb-on-outline
+        state: >-
+          {% set p = price | float(none) %}{% set g = price_avg | float(none) %}
+          {% if p is none %}no_price
+          {% elif p < 0 %}negative
+          {% elif g is not none and p <= g * 0.9 %}cheap
+          {% elif g is not none and p >= g * 1.1 %}expensive
+          {% else %}normal{% endif %}

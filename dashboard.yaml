@@ -1,0 +1,84 @@
+# Energy Now (lite) — dashboard. Create a new dashboard → ⋮ → Raw configuration editor → paste this.
+title: Energy
+views:
+  - title: Now
+    path: now
+    icon: mdi:lightning-bolt
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Right now
+            icon: mdi:lightning-bolt
+          - type: markdown
+            text_only: true
+            content: >-
+              {% set a = states('sensor.energy_now_advice') %}
+              {% if a == 'negative' %}<ha-alert alert-type="success" title="Negative price">You get paid to use power right now. Run the washer, dishwasher or EV charger, and avoid exporting.</ha-alert>
+              {% elif a == 'cheap' %}<ha-alert alert-type="success" title="Cheap moment">A good time to wash, dry or charge.</ha-alert>
+              {% elif a == 'expensive' %}<ha-alert alert-type="warning" title="Expensive moment">Better postpone big loads for a while.</ha-alert>
+              {% elif a == 'normal' %}<ha-alert alert-type="info" title="Normal price">Nothing special right now.</ha-alert>
+              {% else %}<ha-alert alert-type="info">No price known. Check the price sensor in energy_now.yaml.</ha-alert>{% endif %}
+          - type: gauge
+            entity: sensor.energy_now_net_power
+            name: From grid (+) / to grid (−)
+            min: -5
+            max: 5
+            needle: true
+            severity:
+              green: -5
+              yellow: 0.5
+              red: 2.5
+          - type: tile
+            entity: sensor.energy_now_price
+            name: Price now
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_cost_per_hour
+            name: Costing you per hour
+            grid_options: {columns: 6}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Flows
+            icon: mdi:home-lightning-bolt-outline
+          - type: tile
+            entity: sensor.energy_now_home_usage
+            name: Home uses
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_solar
+            name: Solar
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_import
+            name: From the grid
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_export
+            name: To the grid
+            grid_options: {columns: 6}
+          - type: markdown
+            text_only: true
+            content: >-
+              <font color="gray">Where net metering is gone or shrinking (California NEM 3.0, the Netherlands from 2027,
+              dynamic tariffs elsewhere), exported power earns little. Using your own solar and cheap hours pays more.</font>
+      - type: grid
+        cards:
+          - type: heading
+            heading: Last 24 hours
+            icon: mdi:chart-line
+          - type: history-graph
+            hours_to_show: 24
+            entities:
+              - entity: sensor.energy_now_net_power
+                name: Net
+              - entity: sensor.energy_now_solar
+                name: Solar
+          - type: history-graph
+            hours_to_show: 24
+            entities:
+              - entity: sensor.energy_now_price
+                name: Price
