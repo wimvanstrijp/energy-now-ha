@@ -11,7 +11,7 @@ my home costing me per hour?**
 - **Power-flow gauge** and colour-coded tiles for import, export, solar and home usage
 - The last 24 hours of price (with today's average) and power
 - **Core Home Assistant only**: no HACS, no custom cards. You edit 4 lines.
-- Versions for **€, $, £ and A$**
+- Versions for **€, $, £ and A$**, dashboards in **English, Nederlands and Deutsch**
 
 Works with P1/DSMR, HomeWizard, Enphase Envoy, Shelly EM, Emporia Vue, IoTaWatt, SolarEdge or Powerwall for power,
 and Tibber, Octopus Agile, Nord Pool, Amber, EnergyZero or any other "price now" sensor.
@@ -21,9 +21,12 @@ and Tibber, Octopus Agile, Nord Pool, Amber, EnergyZero or any other "price now"
 2. Copy the file for your currency (`energy_now_EUR.yaml`, `_USD`, `_GBP` or `_AUD`) to `/config/packages/`.
 3. Edit the four lines under `EDIT THIS` (your net power sensor and price sensor; solar and average price are optional).
 4. Check configuration and restart Home Assistant.
-5. Create a new dashboard and paste `dashboard.yaml` in the raw configuration editor.
+5. Create a new dashboard and paste `dashboard.yaml` (or `dashboard_NL.yaml` / `dashboard_DE.yaml`) in the raw configuration editor.
 
 Full step-by-step guide and FAQ: [GUIDE.md](GUIDE.md).
+
+## What's new in 0.2.1
+- Dutch and German dashboards (`dashboard_NL.yaml`, `dashboard_DE.yaml`) with local number formatting
 
 ## What's new in 0.2
 - Status line at the top and a price-vs-average gauge
@@ -38,4 +41,4 @@ here: **https://payhip.com/b/aomDO**
 ## Feedback
 Found a bug, or is your meter or price provider not working? Please open an issue.
 
-Tested with Home Assistant 2026.11. Version 0.2. MIT licensed.
+Tested with Home Assistant 2026.11. Version 0.2.1. MIT licensed.

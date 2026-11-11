@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1 (2026-11-11)
+- Dutch and German dashboards with decimal commas
+
 ## 0.2 (2026-11-11)
 - Status line ("Cheap / Expensive right now") with price, % vs today's average and cost per hour
 - Price-vs-average gauge with cheap/normal/expensive segments

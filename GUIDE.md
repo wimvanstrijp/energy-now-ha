@@ -29,7 +29,7 @@ Core Home Assistant only: no HACS and no custom cards. Version 0.1, tested with 
    **Settings → Devices & services → Entities**: search for "power" or "price" and copy the entity ID.
 5. **Developer tools → YAML → Check configuration**, then restart Home Assistant.
 6. **Settings → Dashboards → Add dashboard → New dashboard**, open it, ⋮ → **Edit** → ⋮ → **Raw configuration editor**,
-   paste `dashboard.yaml` and save.
+   paste `dashboard.yaml` (English), `dashboard_NL.yaml` (Nederlands) or `dashboard_DE.yaml` (Deutsch) and save.
 
 ## What the numbers mean
 | On the dashboard | Meaning |

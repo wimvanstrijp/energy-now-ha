@@ -1,0 +1,145 @@
+# Energy Now (lite) v0.2 — Dashboard (Deutsch). Neues Dashboard → ⋮ → Bearbeiten → ⋮ → Raw-Konfigurationseditor → einfügen.
+title: Energie
+views:
+  - title: Jetzt
+    path: now
+    icon: mdi:lightning-bolt
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Ist Strom gerade günstig?
+            icon: mdi:lightning-bolt
+          - type: markdown
+            content: |-
+              {% set a = states('sensor.energy_now_advice') %}
+              {% set p = states('sensor.energy_now_price') %}
+              {% set unit = state_attr('sensor.energy_now_price', 'unit_of_measurement') or '' %}
+              {% set pct = states('sensor.energy_now_price_vs_average') %}
+              {% set net = states('sensor.energy_now_net_power') | float(0) %}
+              {% set cost = states('sensor.energy_now_cost_per_hour') | float(0) %}
+              {% set cur = unit.split('/')[0] %}
+              {% if a == 'negative' %}## 🟢 Negativer Preis — jetzt Strom nutzen
+              {% elif a == 'cheap' %}## 🟢 Gerade günstig
+              {% elif a == 'expensive' %}## 🔴 Gerade teuer
+              {% elif a == 'normal' %}## ⚪ Gerade normaler Preis
+              {% else %}## ❔ Kein Preis bekannt{% endif %}
+
+              {% if p not in ['unknown', 'unavailable'] %}**{{ p | replace('.', ',') }} {{ unit }}**{% if pct not in ['unknown', 'unavailable'] %} · {{ pct | int | abs }}% {{ 'unter' if pct | int < 0 else 'über' }} dem Tagesdurchschnitt{% endif %}{% endif %}
+
+              {% if net >= 0 %}Dein Haus bezieht **{{ net | replace('.', ',') }} kW** aus dem Netz → **{{ cur }} {{ ('%.2f' | format(cost)) | replace('.', ',') }} pro Stunde**.
+              {% else %}Du speist **{{ (net | abs) | string | replace('.', ',') }} kW** ein → Wert **{{ cur }} {{ ('%.2f' | format(cost | abs)) | replace('.', ',') }} pro Stunde**.{% endif %}
+
+              {% if a == 'negative' %}_Waschmaschine, Trockner oder E-Auto jetzt laufen lassen und nicht einspeisen._
+              {% elif a == 'cheap' %}_Ein guter Moment zum Waschen, Trocknen oder Laden._
+              {% elif a == 'expensive' %}_Große Verbraucher lieber etwas später einschalten._
+              {% elif a == 'normal' %}_Gerade nichts Besonderes._
+              {% else %}_Prüfe den Preissensor in deiner energy_now-Datei._{% endif %}
+          - type: gauge
+            entity: sensor.energy_now_price_vs_average
+            name: Preis vs. Tagesdurchschnitt
+            min: -50
+            max: 50
+            needle: true
+            segments:
+              - from: -50
+                color: "#2e9d5b"
+                label: Günstig
+              - from: -10
+                color: "#8c9aa6"
+                label: Normal
+              - from: 10
+                color: "#f08c00"
+                label: Teuer
+              - from: 30
+                color: "#d64545"
+                label: Sehr teuer
+            visibility:
+              - condition: state
+                entity: sensor.energy_now_price_vs_average
+                state_not: unavailable
+          - type: tile
+            entity: sensor.energy_now_price
+            name: Preis jetzt
+            color: indigo
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_cost_per_hour
+            name: Kostet dich pro Stunde
+            color: purple
+            grid_options: {columns: 6}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Stromflüsse
+            icon: mdi:home-lightning-bolt-outline
+          - type: gauge
+            entity: sensor.energy_now_net_power
+            name: Aus dem Netz (+) / Einspeisung (−)
+            min: -5
+            max: 5
+            needle: true
+            segments:
+              - from: -5
+                color: "#2e9d5b"
+                label: Einspeisung
+              - from: 0
+                color: "#8c9aa6"
+                label: Gering
+              - from: 1
+                color: "#f08c00"
+                label: Mittel
+              - from: 3
+                color: "#d64545"
+                label: Hoch
+          - type: tile
+            entity: sensor.energy_now_home_usage
+            name: Haus verbraucht
+            color: blue
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_solar
+            name: Solar
+            color: amber
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_import
+            name: Aus dem Netz
+            color: red
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_export
+            name: Ins Netz
+            color: green
+            grid_options: {columns: 6}
+          - type: markdown
+            text_only: true
+            content: >-
+              <font color="gray">Mit dynamischem Tarif lohnt sich Einspeisen oft kaum. Eigenen Solarstrom und günstige Stunden nutzen
+              spart mehr — ideal auch für Balkonkraftwerk mit Speicher.</font>
+      - type: grid
+        cards:
+          - type: heading
+            heading: Letzte 24 Stunden
+            icon: mdi:chart-line
+          - type: history-graph
+            title: Preis
+            hours_to_show: 24
+            entities:
+              - entity: sensor.energy_now_price
+                name: Preis
+              - entity: sensor.energy_now_average_price
+                name: Tagesdurchschnitt
+          - type: history-graph
+            title: Netz und Solar
+            hours_to_show: 24
+            entities:
+              - entity: sensor.energy_now_net_power
+                name: Netz (+ Bezug)
+              - entity: sensor.energy_now_solar
+                name: Solar
+          - type: markdown
+            text_only: true
+            content: <font color="gray">Die Diagramme füllen sich von selbst; nach einem Tag siehst du 24 Stunden.</font>

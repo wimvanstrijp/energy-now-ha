@@ -1,0 +1,145 @@
+# Energy Now (lite) v0.2 — dashboard (Nederlands). Nieuw dashboard → ⋮ → Bewerken → ⋮ → Raw-configuratie-editor → plak dit.
+title: Energie
+views:
+  - title: Nu
+    path: now
+    icon: mdi:lightning-bolt
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Is stroom nu goedkoop?
+            icon: mdi:lightning-bolt
+          - type: markdown
+            content: |-
+              {% set a = states('sensor.energy_now_advice') %}
+              {% set p = states('sensor.energy_now_price') %}
+              {% set unit = state_attr('sensor.energy_now_price', 'unit_of_measurement') or '' %}
+              {% set pct = states('sensor.energy_now_price_vs_average') %}
+              {% set net = states('sensor.energy_now_net_power') | float(0) %}
+              {% set cost = states('sensor.energy_now_cost_per_hour') | float(0) %}
+              {% set cur = unit.split('/')[0] %}
+              {% if a == 'negative' %}## 🟢 Negatieve prijs — gebruik nu stroom
+              {% elif a == 'cheap' %}## 🟢 Nu goedkoop
+              {% elif a == 'expensive' %}## 🔴 Nu duur
+              {% elif a == 'normal' %}## ⚪ Nu een normale prijs
+              {% else %}## ❔ Geen prijs bekend{% endif %}
+
+              {% if p not in ['unknown', 'unavailable'] %}**{{ p | replace('.', ',') }} {{ unit }}**{% if pct not in ['unknown', 'unavailable'] %} · {{ pct | int | abs }}% {{ 'onder' if pct | int < 0 else 'boven' }} het daggemiddelde{% endif %}{% endif %}
+
+              {% if net >= 0 %}Je huis haalt **{{ net | replace('.', ',') }} kW** van het net → **{{ cur }} {{ ('%.2f' | format(cost)) | replace('.', ',') }} per uur**.
+              {% else %}Je levert **{{ (net | abs) | string | replace('.', ',') }} kW** terug → waard **{{ cur }} {{ ('%.2f' | format(cost | abs)) | replace('.', ',') }} per uur**.{% endif %}
+
+              {% if a == 'negative' %}_Zet de wasmachine, droger of auto aan en lever liever niet terug._
+              {% elif a == 'cheap' %}_Een goed moment om te wassen, drogen of laden._
+              {% elif a == 'expensive' %}_Stel grote verbruikers liever even uit._
+              {% elif a == 'normal' %}_Niets bijzonders op dit moment._
+              {% else %}_Controleer de prijssensor in je energy_now-bestand._{% endif %}
+          - type: gauge
+            entity: sensor.energy_now_price_vs_average
+            name: Prijs t.o.v. daggemiddelde
+            min: -50
+            max: 50
+            needle: true
+            segments:
+              - from: -50
+                color: "#2e9d5b"
+                label: Goedkoop
+              - from: -10
+                color: "#8c9aa6"
+                label: Normaal
+              - from: 10
+                color: "#f08c00"
+                label: Duur
+              - from: 30
+                color: "#d64545"
+                label: Heel duur
+            visibility:
+              - condition: state
+                entity: sensor.energy_now_price_vs_average
+                state_not: unavailable
+          - type: tile
+            entity: sensor.energy_now_price
+            name: Prijs nu
+            color: indigo
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_cost_per_hour
+            name: Kost je nu per uur
+            color: purple
+            grid_options: {columns: 6}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Stroom in en uit
+            icon: mdi:home-lightning-bolt-outline
+          - type: gauge
+            entity: sensor.energy_now_net_power
+            name: Van het net (+) / terug (−)
+            min: -5
+            max: 5
+            needle: true
+            segments:
+              - from: -5
+                color: "#2e9d5b"
+                label: Teruglevering
+              - from: 0
+                color: "#8c9aa6"
+                label: Klein verbruik
+              - from: 1
+                color: "#f08c00"
+                label: Middel
+              - from: 3
+                color: "#d64545"
+                label: Groot verbruik
+          - type: tile
+            entity: sensor.energy_now_home_usage
+            name: Huis verbruikt
+            color: blue
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_solar
+            name: Zonnepanelen
+            color: amber
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_import
+            name: Van het net
+            color: red
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_export
+            name: Terug naar het net
+            color: green
+            grid_options: {columns: 6}
+          - type: markdown
+            text_only: true
+            content: >-
+              <font color="gray">Na 1 januari 2027 stopt salderen. Wat je teruglevert levert dan weinig op; zelf verbruiken en goedkope
+              uren gebruiken loont meer.</font>
+      - type: grid
+        cards:
+          - type: heading
+            heading: Laatste 24 uur
+            icon: mdi:chart-line
+          - type: history-graph
+            title: Prijs
+            hours_to_show: 24
+            entities:
+              - entity: sensor.energy_now_price
+                name: Prijs
+              - entity: sensor.energy_now_average_price
+                name: Daggemiddelde
+          - type: history-graph
+            title: Net en zon
+            hours_to_show: 24
+            entities:
+              - entity: sensor.energy_now_net_power
+                name: Netto (+ van het net)
+              - entity: sensor.energy_now_solar
+                name: Zonnepanelen
+          - type: markdown
+            text_only: true
+            content: <font color="gray">De grafieken vullen zich vanzelf; na een dag zie je 24 uur.</font>
