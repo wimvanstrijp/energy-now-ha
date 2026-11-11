@@ -1,4 +1,4 @@
-# Energy Now (lite) — dashboard. Create a new dashboard → ⋮ → Raw configuration editor → paste this.
+# Energy Now (lite) v0.2 — dashboard. Create a new dashboard → ⋮ → Edit → ⋮ → Raw configuration editor → paste this.
 title: Energy
 views:
   - title: Now
@@ -10,55 +10,109 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: Right now
+            heading: Is power cheap right now?
             icon: mdi:lightning-bolt
           - type: markdown
-            text_only: true
-            content: >-
+            content: |-
               {% set a = states('sensor.energy_now_advice') %}
-              {% if a == 'negative' %}<ha-alert alert-type="success" title="Negative price">You get paid to use power right now. Run the washer, dishwasher or EV charger, and avoid exporting.</ha-alert>
-              {% elif a == 'cheap' %}<ha-alert alert-type="success" title="Cheap moment">A good time to wash, dry or charge.</ha-alert>
-              {% elif a == 'expensive' %}<ha-alert alert-type="warning" title="Expensive moment">Better postpone big loads for a while.</ha-alert>
-              {% elif a == 'normal' %}<ha-alert alert-type="info" title="Normal price">Nothing special right now.</ha-alert>
-              {% else %}<ha-alert alert-type="info">No price known. Check the price sensor in energy_now.yaml.</ha-alert>{% endif %}
+              {% set p = states('sensor.energy_now_price') %}
+              {% set unit = state_attr('sensor.energy_now_price', 'unit_of_measurement') or '' %}
+              {% set pct = states('sensor.energy_now_price_vs_average') %}
+              {% set net = states('sensor.energy_now_net_power') | float(0) %}
+              {% set cost = states('sensor.energy_now_cost_per_hour') | float(0) %}
+              {% set cur = unit.split('/')[0] %}
+              {% if a == 'negative' %}## 🟢 Negative price — use power now
+              {% elif a == 'cheap' %}## 🟢 Cheap right now
+              {% elif a == 'expensive' %}## 🔴 Expensive right now
+              {% elif a == 'normal' %}## ⚪ Normal price right now
+              {% else %}## ❔ No price known{% endif %}
+
+              {% if p not in ['unknown', 'unavailable'] %}**{{ p }} {{ unit }}**{% if pct not in ['unknown', 'unavailable'] %} · {{ pct | int | abs }}% {{ 'below' if pct | int < 0 else 'above' }} today's average{% endif %}{% endif %}
+
+              {% if net >= 0 %}Your home is drawing **{{ net }} kW** from the grid → **{{ cur }} {{ '%.2f' | format(cost) }} per hour**.
+              {% else %}You are exporting **{{ net | abs }} kW** → worth **{{ cur }} {{ '%.2f' | format(cost | abs) }} per hour**.{% endif %}
+
+              {% if a == 'negative' %}_Run the washer, dryer or EV charger, and avoid exporting._
+              {% elif a == 'cheap' %}_A good moment to wash, dry or charge._
+              {% elif a == 'expensive' %}_Better postpone big loads for a while._
+              {% elif a == 'normal' %}_Nothing special right now._
+              {% else %}_Check the price sensor in your energy_now file._{% endif %}
+          - type: gauge
+            entity: sensor.energy_now_price_vs_average
+            name: Price vs today's average
+            min: -50
+            max: 50
+            needle: true
+            segments:
+              - from: -50
+                color: "#2e9d5b"
+                label: Cheap
+              - from: -10
+                color: "#8c9aa6"
+                label: Normal
+              - from: 10
+                color: "#f08c00"
+                label: Expensive
+              - from: 30
+                color: "#d64545"
+                label: Very expensive
+            visibility:
+              - condition: state
+                entity: sensor.energy_now_price_vs_average
+                state_not: unavailable
+          - type: tile
+            entity: sensor.energy_now_price
+            name: Price now
+            color: indigo
+            grid_options: {columns: 6}
+          - type: tile
+            entity: sensor.energy_now_cost_per_hour
+            name: Costing you per hour
+            color: purple
+            grid_options: {columns: 6}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Power flows
+            icon: mdi:home-lightning-bolt-outline
           - type: gauge
             entity: sensor.energy_now_net_power
             name: From grid (+) / to grid (−)
             min: -5
             max: 5
             needle: true
-            severity:
-              green: -5
-              yellow: 0.5
-              red: 2.5
-          - type: tile
-            entity: sensor.energy_now_price
-            name: Price now
-            grid_options: {columns: 6}
-          - type: tile
-            entity: sensor.energy_now_cost_per_hour
-            name: Costing you per hour
-            grid_options: {columns: 6}
-      - type: grid
-        cards:
-          - type: heading
-            heading: Flows
-            icon: mdi:home-lightning-bolt-outline
+            segments:
+              - from: -5
+                color: "#2e9d5b"
+                label: Exporting
+              - from: 0
+                color: "#8c9aa6"
+                label: Small draw
+              - from: 1
+                color: "#f08c00"
+                label: Medium draw
+              - from: 3
+                color: "#d64545"
+                label: Large draw
           - type: tile
             entity: sensor.energy_now_home_usage
             name: Home uses
+            color: blue
             grid_options: {columns: 6}
           - type: tile
             entity: sensor.energy_now_solar
             name: Solar
+            color: amber
             grid_options: {columns: 6}
           - type: tile
             entity: sensor.energy_now_import
             name: From the grid
+            color: red
             grid_options: {columns: 6}
           - type: tile
             entity: sensor.energy_now_export
             name: To the grid
+            color: green
             grid_options: {columns: 6}
           - type: markdown
             text_only: true
@@ -71,14 +125,21 @@ views:
             heading: Last 24 hours
             icon: mdi:chart-line
           - type: history-graph
-            hours_to_show: 24
-            entities:
-              - entity: sensor.energy_now_net_power
-                name: Net
-              - entity: sensor.energy_now_solar
-                name: Solar
-          - type: history-graph
+            title: Price
             hours_to_show: 24
             entities:
               - entity: sensor.energy_now_price
                 name: Price
+              - entity: sensor.energy_now_average_price
+                name: Today's average
+          - type: history-graph
+            title: Grid and solar
+            hours_to_show: 24
+            entities:
+              - entity: sensor.energy_now_net_power
+                name: Net (+ from grid)
+              - entity: sensor.energy_now_solar
+                name: Solar
+          - type: markdown
+            text_only: true
+            content: <font color="gray">Graphs fill up by themselves; after a day you see the full 24 hours.</font>

@@ -15,7 +15,7 @@ Core Home Assistant only: no HACS and no custom cards. Version 0.1, tested with 
    - **Shelly EM / Shelly Pro 3EM**, **IoTaWatt**, **Emporia Vue**, **SolarEdge** or a **Tesla Powerwall** (*Site power*).
 2. **A price-now sensor** (all-in, per kWh): **Tibber**, **Octopus Energy** (Agile), **Nord Pool**, **Amber Electric**,
    **EnergyZero**, **Frank Energie**, **ANWB**, or any other integration that gives the current price.
-3. Optional: a **solar power** sensor and an **average price today** sensor. The average enables the cheap/expensive tip.
+3. Optional: a **solar power** sensor and an **average price today** sensor. The average enables the cheap/expensive tip and the price gauge (EnergyZero, Nord Pool and Tibber provide one; otherwise create a statistics helper).
 
 ## Install (± 10 minutes)
 1. Pick the file for your currency: `energy_now_EUR.yaml`, `energy_now_USD.yaml`, `energy_now_GBP.yaml` or `energy_now_AUD.yaml`.

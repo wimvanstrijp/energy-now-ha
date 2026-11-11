@@ -1,6 +1,6 @@
 # =====================================================================================
 #  Energy Now (lite) — "is power cheap right now?" dashboard for Home Assistant
-#  Version 0.1 (2026-11-11). Core Home Assistant only, no HACS needed. Currency: €
+#  Version 0.2 (2026-11-11). Core Home Assistant only, no HACS needed. Currency: €
 #
 #  STEP 1: fill in your own sensors under "variables" below (see GUIDE.md). Only edit that block.
 #  STEP 2: put this file in /config/packages/ and restart Home Assistant.
@@ -68,7 +68,7 @@ template:
         device_class: power
         state_class: measurement
         icon: mdi:solar-power-variant
-        state: "{{ solar_kw | float(0) | round(3) }}"
+        state: "{{ [solar_kw | float(0), 0] | max | round(3) }}"
       - name: "Energy Now price"
         unique_id: energy_now_price
         unit_of_measurement: "€/kWh"
@@ -82,6 +82,19 @@ template:
         availability: "{{ net_kw not in [none, 'none'] and price not in [none, 'none'] }}"
         # With a dynamic tariff and no net metering, this is what you really pay (+) or earn (−) per hour.
         state: "{{ (net_kw | float(0) * price | float(0)) | round(2) }}"
+      - name: "Energy Now average price"
+        unique_id: energy_now_average_price
+        unit_of_measurement: "€/kWh"
+        icon: mdi:approximately-equal
+        availability: "{{ price_avg not in [none, 'none'] }}"
+        state: "{{ price_avg | float(0) | round(3) }}"
+      - name: "Energy Now price vs average"
+        unique_id: energy_now_price_vs_average
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:percent-outline
+        availability: "{{ price_avg not in [none, 'none'] and price not in [none, 'none'] and price_avg | float(0) > 0 }}"
+        state: "{{ ((price | float(0) / price_avg | float(1) - 1) * 100) | round(0) }}"
       - name: "Energy Now advice"
         unique_id: energy_now_advice
         icon: mdi:lightbulb-on-outline
